@@ -102,39 +102,75 @@ export default function Home() {
               gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
               gap: '20px'
             }}>
-              {cars.map((car) => (
-                <div key={car.id} style={{ border: '1px solid #ccc', borderRadius: '8px', padding: '15px' }}>
-                  <img
-                    src={car.imageUrl}
-                    alt={car.model}
-                    style={{ width: '100%', height: '180px', objectFit: 'cover', borderRadius: '4px' }}
-                  />
-                  <h3>{car.brand} {car.model}</h3>
-                  <p><strong>Variant:</strong> {car.variant}</p>
-                  <p><strong>Manufacture Year:</strong> {car.manufactureYear}</p>
-                  <p><strong>Rate:</strong> ₹{car.dailyRate}/day</p>
-                  <p><strong>Owner:</strong> {car.ownerName}</p>
-                  <p><strong>Status:</strong> {car.available ? 'Available' : 'Unavailable'}</p>
+              
+           {cars.map((car) => (
+  <div
+    key={car.id}
+    style={{
+      border: '1px solid #ccc',
+      borderRadius: '8px',
+      padding: '15px'
+    }}
+  > 
 
-                  <button
-                    disabled={!car.available}
-                    onClick={() => setSelectedCar(car)}
-                    style={{
-                      width: '100%',
-                      padding: '10px',
-                      backgroundColor: car.available ? '#007bff' : '#ccc',
-                      color: '#fff',
-                      border: 'none',
-                      borderRadius: '4px',
-                      cursor: car.available ? 'pointer' : 'not-allowed'
-                    }}
-                  >
-                    {car.available ? 'Book Now' : 'Unavailable'}
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
+    <img
+      src={`http://localhost:8080/api/user-cars/${car.id}/photo`}
+      alt={car.model}
+      style={{
+        width: '100%',
+        height: '180px',
+        objectFit: 'cover',
+        borderRadius: '4px'
+      }}
+    />
+
+    <h3>
+      {car.brand} {car.model}
+    </h3>
+
+    <p>
+      <strong>Variant:</strong> {car.variant}
+    </p>
+
+    <p>
+      <strong>Manufacture Year:</strong> {car.manufactureYear}
+    </p>
+
+    <p>
+      <strong>Rate:</strong> ₹{car.dailyRate}/day
+    </p>
+
+    <p>
+      <strong>Owner:</strong> {car.ownerName}
+    </p>
+
+    <p>
+      <strong>Status:</strong>{" "}
+      {car.available ? 'Available' : 'Unavailable'}
+    </p>
+
+    <button
+      disabled={!car.available}
+      onClick={() => setSelectedCar(car)}
+      style={{
+        width: '100%',
+        padding: '10px',
+        backgroundColor: car.available
+          ? '#007bff'
+          : '#ccc',
+        color: '#fff',
+        border: 'none',
+        borderRadius: '4px',
+        cursor: car.available
+          ? 'pointer'
+          : 'not-allowed'
+      }}
+    >
+      {car.available ? 'Book Now' : 'Unavailable'}
+    </button>
+
+  </div>
+))}
 
           {selectedCar && (
             <div style={{
@@ -209,6 +245,8 @@ export default function Home() {
                 </form>
               </div>
             </div>
+          )}
+        </div>
           )}
         </div>
       </main>

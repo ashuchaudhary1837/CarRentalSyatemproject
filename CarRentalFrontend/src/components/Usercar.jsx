@@ -8,7 +8,6 @@ export default function AddCarForm() {
 
     // Data passed from BrandSelection page
     const passedState = location.state || {};
-
     const [brand] = useState(passedState.brand || "");
     const [model] = useState(passedState.model || "");
     const [manufactureYear, setManufactureYear] = useState("");

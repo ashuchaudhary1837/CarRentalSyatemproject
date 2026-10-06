@@ -9,7 +9,6 @@ public class UserCar {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
     private String brand;
     private String model;
     private String variant;
@@ -21,6 +20,13 @@ public class UserCar {
     @Lob
     @Column(name = "image", columnDefinition = "LONGBLOB")
     private byte[] image;
+
+    private String imageContentType;
+
+
+    // ==============================
+    // GETTERS AND SETTERS
+    // ==============================
 
     public Long getId() {
         return id;
@@ -92,5 +98,13 @@ public class UserCar {
 
     public void setImage(byte[] image) {
         this.image = image;
+    }
+
+    public String getImageContentType() {
+        return imageContentType;
+    }
+
+    public void setImageContentType(String imageContentType) {
+        this.imageContentType = imageContentType;
     }
 }

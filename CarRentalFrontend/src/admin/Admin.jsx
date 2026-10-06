@@ -1,17 +1,13 @@
 import React, { useEffect, useState } from "react";
 
-function Admin() {
-
-    // =========================
-    // STATES
-    // =========================
+export default function Admin() {
 
     const [cars, setCars] = useState([]);
     const [bookings, setBookings] = useState([]);
-
+    const [selectedRC, setSelectedRC] = useState(null);
 
     // =========================
-    // LOAD CARS (from user_cars)
+    // LOAD CARS
     // =========================
 
     const loadCars = async () => {
@@ -42,6 +38,7 @@ function Admin() {
     // =========================
 
     const loadBookings = async () => {
+
         try {
 
             const response = await fetch(
@@ -54,20 +51,21 @@ function Admin() {
 
             const data = await response.json();
 
-            console.log("Bookings:", data);
-
             setBookings(data);
 
         } catch (error) {
 
-            console.error("Error loading bookings:", error);
+            console.error(
+                "Error loading bookings:",
+                error
+            );
 
         }
     };
 
 
     // =========================
-    // LOAD DATA WHEN PAGE OPENS
+    // LOAD DATA
     // =========================
 
     useEffect(() => {
@@ -79,83 +77,42 @@ function Admin() {
 
 
     // =========================
-    // MAKE CAR UNAVAILABLE
+    // TOGGLE CAR AVAILABILITY
     // =========================
 
-    const makeUnavailable = async (id) => {
+    const toggleAvailability = async (car) => {
 
         try {
 
             const response = await fetch(
-                `http://localhost:8080/api/user-cars/${id}/unavailable`,
+                `http://localhost:8080/api/cars/${car.id}/available`,
                 {
-                    method: "PUT"
+                    method: "PUT",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify(!car.available)
                 }
             );
 
-
             if (!response.ok) {
-
                 throw new Error(
-                    "Failed to make car unavailable"
+                    "Failed to update availability"
                 );
             }
 
-
-            // Reload cars
+            // Refresh cars
             loadCars();
 
         } catch (error) {
 
             console.error(
-                "Make unavailable error:",
+                "Error updating availability:",
                 error
             );
 
-            alert(error.message);
-        }
-    };
+            alert("Unable to update car availability");
 
-
-    // =========================
-    // MAKE CAR AVAILABLE
-    // =========================
-
-    const makeAvailable = async (id) => {
-
-        try {
-
-            const response = await fetch(
-                `http://localhost:8080/api/user-cars/${id}/available`,
-                {
-                    method: "PUT"
-                }
-            );
-
-
-            if (!response.ok) {
-
-                const errorText =
-                    await response.text();
-
-                throw new Error(
-                    errorText ||
-                    "Failed to make car available"
-                );
-            }
-
-
-            // Reload cars
-            loadCars();
-
-        } catch (error) {
-
-            console.error(
-                "Make available error:",
-                error
-            );
-
-            alert(error.message);
         }
     };
 
@@ -164,661 +121,776 @@ function Admin() {
     // APPROVE BOOKING
     // =========================
 
-    const approveBooking = async (id) => {
+    const approveBooking = async (bookingId) => {
 
         try {
 
             const response = await fetch(
-                `http://localhost:8080/api/bookings/${id}/approve`,
+                `http://localhost:8080/api/admin/bookings/${bookingId}/approve`,
                 {
                     method: "PUT"
                 }
             );
 
-
             if (!response.ok) {
-
-                const errorText =
-                    await response.text();
-
                 throw new Error(
-                    errorText ||
                     "Failed to approve booking"
                 );
             }
 
+            alert("Booking approved successfully");
 
-            const updatedBooking =
-                await response.json();
-
-
-            console.log(
-                "Approved booking:",
-                updatedBooking
-            );
-
-
-            // Update booking in React state
-            setBookings(
-                (previousBookings) =>
-                    previousBookings.map(
-                        (booking) =>
-                            booking.id === id
-                                ? updatedBooking
-                                : booking
-                    )
-            );
-
-
-            // Approved booking makes car unavailable
+            loadBookings();
             loadCars();
 
         } catch (error) {
 
             console.error(
-                "Approve booking error:",
+                "Error approving booking:",
                 error
             );
 
-            alert(error.message);
+            alert("Unable to approve booking");
+
         }
     };
 
 
     // =========================
-    // REJECT BOOKING
+    // DELETE BOOKING
     // =========================
 
-    const rejectBooking = async (id) => {
+    const deleteBooking = async (bookingId) => {
 
-        try {
+        const confirmDelete = window.confirm(
+            "Are you sure you want to delete this booking?"
+        );
 
-            const response = await fetch(
-                `http://localhost:8080/api/bookings/${id}/reject`,
-                {
-                    method: "PUT"
-                }
-            );
-
-
-            if (!response.ok) {
-
-                const errorText =
-                    await response.text();
-
-                throw new Error(
-                    errorText ||
-                    "Failed to reject booking"
-                );
-            }
-
-
-            const updatedBooking =
-                await response.json();
-
-
-            console.log(
-                "Rejected booking:",
-                updatedBooking
-            );
-
-
-            setBookings(
-                (previousBookings) =>
-                    previousBookings.map(
-                        (booking) =>
-                            booking.id === id
-                                ? updatedBooking
-                                : booking
-                    )
-            );
-
-        } catch (error) {
-
-            console.error(
-                "Reject booking error:",
-                error
-            );
-
-            alert(error.message);
-        }
-    };
-
-
-    // =========================
-    // COMPLETE BOOKING
-    // =========================
-
-    const completeBooking = async (id) => {
-
-        try {
-
-            const response = await fetch(
-                `http://localhost:8080/api/bookings/${id}/complete`,
-                {
-                    method: "PUT"
-                }
-            );
-
-
-            if (!response.ok) {
-
-                const errorText =
-                    await response.text();
-
-                throw new Error(
-                    errorText ||
-                    "Failed to complete booking"
-                );
-            }
-
-
-            const updatedBooking =
-                await response.json();
-
-
-            console.log(
-                "Completed booking:",
-                updatedBooking
-            );
-
-
-            setBookings(
-                (previousBookings) =>
-                    previousBookings.map(
-                        (booking) =>
-                            booking.id === id
-                                ? updatedBooking
-                                : booking
-                    )
-            );
-
-
-            // Car becomes available again
-            loadCars();
-
-        } catch (error) {
-
-            console.error(
-                "Complete booking error:",
-                error
-            );
-
-            alert(error.message);
-        }
-    };
-
-
-    // =========================
-    // CLEAR BOOKING
-    // =========================
-
-    const clearBooking = async (id) => {
-
-        if (
-            !window.confirm(
-                "Are you sure you want to clear this booking?"
-            )
-        ) {
-
+        if (!confirmDelete) {
             return;
         }
 
-
         try {
 
             const response = await fetch(
-                `http://localhost:8080/api/bookings/${id}`,
+                `http://localhost:8080/api/bookings/${bookingId}`,
                 {
                     method: "DELETE"
                 }
             );
 
-
             if (!response.ok) {
-
                 throw new Error(
                     "Failed to delete booking"
                 );
             }
 
+            alert("Booking deleted successfully");
 
-            alert(
-                "Booking request cleared successfully"
-            );
-
-
-            // Reload bookings
             loadBookings();
-
-            // Reload cars
             loadCars();
 
         } catch (error) {
 
             console.error(
-                "Error clearing booking:",
+                "Error deleting booking:",
                 error
             );
 
-            alert(
-                "Failed to clear booking"
-            );
+            alert("Unable to delete booking");
+
         }
     };
 
-
-    // =========================
-    // JSX
-    // =========================
 
     return (
 
         <div
             style={{
-                padding: "30px",
-                maxWidth: "1000px",
-                margin: "auto"
+                minHeight: "100vh",
+                backgroundColor: "#f5f6fa",
+                padding: "30px"
             }}
         >
 
-            <h1>Admin Dashboard</h1>
+            {/* ================================= */}
+            {/* PAGE TITLE */}
+            {/* ================================= */}
+
+            <div
+                style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    marginBottom: "25px"
+                }}
+            >
+
+                <h2
+                    style={{
+                        fontWeight: "700",
+                        margin: 0
+                    }}
+                >
+                    🚗 Admin Dashboard
+                </h2>
+
+                <button
+                    className="btn btn-primary"
+                    onClick={() => {
+                        loadCars();
+                        loadBookings();
+                    }}
+                >
+                    🔄 Refresh
+                </button>
+
+            </div>
 
 
-            {/* ========================================= */}
-            {/* BOOKING REQUESTS */}
-            {/* ========================================= */}
+            {/* ================================= */}
+            {/* MANAGE CARS */}
+            {/* ================================= */}
 
-            <hr />
+            <div
+                style={{
+                    backgroundColor: "#ffffff",
+                    borderRadius: "12px",
+                    padding: "25px",
+                    marginBottom: "35px",
+                    boxShadow:
+                        "0 4px 15px rgba(0,0,0,0.08)"
+                }}
+            >
 
-            <h2>Booking Requests</h2>
-
-
-            {bookings.length === 0 ? (
-
-                <p>No booking requests found.</p>
-
-            ) : (
-
-                <div>
-
-                    {bookings.map((booking) => (
-
-                        <div
-                            key={booking.id}
-                            style={{
-                                border: "1px solid #ccc",
-                                padding: "20px",
-                                marginBottom: "15px",
-                                borderRadius: "8px"
-                            }}
-                        >
-
-                            <h3>
-                                Booking #{booking.id}
-                            </h3>
+                <h3
+                    style={{
+                        fontWeight: "600",
+                        marginBottom: "20px"
+                    }}
+                >
+                    Manage Cars
+                </h3>
 
 
-                            <p>
-                                <strong>Car ID:</strong>{" "}
-                                {booking.car?.id}
-                            </p>
+                {cars.length === 0 ? (
 
+                    <div
+                        style={{
+                            textAlign: "center",
+                            padding: "40px",
+                            color: "#777"
+                        }}
+                    >
+                        No cars available.
+                    </div>
 
-                            <p>
-                                <strong>Customer Name:</strong>{" "}
-                                {booking.customerName}
-                            </p>
+                ) : (
 
+                    /*
+                     * 3 columns
+                     * 2 rows visible naturally = 6 cards
+                     */
 
-                            <p>
-                                <strong>Customer Email:</strong>{" "}
-                                {booking.customerEmail}
-                            </p>
+                    <div
+                        style={{
+                            display: "grid",
+                            gridTemplateColumns:
+                                "repeat(3, 1fr)",
+                            gap: "20px"
+                        }}
+                    >
 
+                        {cars.map((car) => (
 
-                            <p>
-                                <strong>Start Date:</strong>{" "}
-                                {booking.startDate}
-                            </p>
+                            <div
+                                key={car.id}
+                                style={{
+                                    backgroundColor:
+                                        "#ffffff",
+                                    border:
+                                        "1px solid #dddddd",
+                                    borderRadius:
+                                        "12px",
+                                    overflow: "hidden",
+                                    boxShadow:
+                                        "0 4px 12px rgba(0,0,0,0.10)",
+                                    minWidth: 0
+                                }}
+                            >
 
+                                {/* ================= */}
+                                {/* CAR IMAGE */}
+                                {/* ================= */}
 
-                            <p>
-                                <strong>End Date:</strong>{" "}
-                                {booking.endDate}
-                            </p>
+                                <div
+                                    style={{
+                                        width: "100%",
+                                        height: "180px",
+                                        backgroundColor:
+                                            "#f7f7f7"
+                                    }}
+                                >
 
-
-                            <p>
-                                <strong>Total Price:</strong>{" "}
-                                ₹{booking.totalPrice}
-                            </p>
-
-
-                            <p>
-                                <strong>Status:</strong>{" "}
-                                {booking.status}
-                            </p>
-
-
-                            {/* PENDING */}
-
-                            {booking.status === "PENDING" && (
-
-                                <div>
-
-                                    <button
-                                        onClick={() =>
-                                            approveBooking(
-                                                booking.id
-                                            )
-                                        }
+                                    <img
+                                        src={`http://localhost:8080/api/user-cars/${car.id}/photo`}
+                                        alt={`${car.brand} ${car.model}`}
                                         style={{
-                                            backgroundColor:
-                                                "green",
-                                            color: "white",
-                                            border: "none",
-                                            padding:
-                                                "10px 15px",
-                                            borderRadius:
-                                                "5px",
-                                            cursor:
-                                                "pointer",
-                                            marginRight:
-                                                "10px"
+                                            width: "100%",
+                                            height: "100%",
+                                            objectFit:
+                                                "contain",
+                                            display: "block"
                                         }}
-                                    >
-                                        Approve
-                                    </button>
-
-
-                                    <button
-                                        onClick={() =>
-                                            rejectBooking(
-                                                booking.id
-                                            )
-                                        }
-                                        style={{
-                                            backgroundColor:
-                                                "red",
-                                            color: "white",
-                                            border: "none",
-                                            padding:
-                                                "10px 15px",
-                                            borderRadius:
-                                                "5px",
-                                            cursor:
-                                                "pointer"
-                                        }}
-                                    >
-                                        Reject
-                                    </button>
+                                    />
 
                                 </div>
 
-                            )}
 
+                                {/* ================= */}
+                                {/* CAR INFORMATION */}
+                                {/* ================= */}
 
-                            {/* APPROVED */}
-
-                            {booking.status === "APPROVED" && (
-
-                                <button
-                                    onClick={() =>
-                                        completeBooking(
-                                            booking.id
-                                        )
-                                    }
+                                <div
                                     style={{
-                                        backgroundColor:
-                                            "blue",
-                                        color: "white",
-                                        border: "none",
-                                        padding:
-                                            "10px 15px",
-                                        borderRadius:
-                                            "5px",
-                                        cursor:
-                                            "pointer"
+                                        padding: "16px"
                                     }}
                                 >
-                                    Complete Booking
-                                </button>
 
-                            )}
-
-
-                            {/* COMPLETED */}
-
-                            {booking.status === "COMPLETED" && (
-
-                                <p>
-                                    Booking completed.
-                                    Car is available again.
-                                </p>
-
-                            )}
+                                    <h5
+                                        style={{
+                                            fontWeight:
+                                                "700",
+                                            marginBottom:
+                                                "8px"
+                                        }}
+                                    >
+                                        {car.brand}{" "}
+                                        {car.model}
+                                    </h5>
 
 
-                            {/* REJECTED */}
-
-                            {booking.status === "REJECTED" && (
-
-                                <p>
-                                    Booking request rejected.
-                                </p>
-
-                            )}
-
-
-                            {/* CLEAR BOOKING */}
-
-                            <button
-                                onClick={() =>
-                                    clearBooking(
-                                        booking.id
-                                    )
-                                }
-                                style={{
-                                    backgroundColor:
-                                        "darkorange",
-                                    color: "white",
-                                    border: "none",
-                                    padding:
-                                        "10px 15px",
-                                    borderRadius:
-                                        "5px",
-                                    cursor:
-                                        "pointer",
-                                    marginTop:
-                                        "15px"
-                                }}
-                            >
-                                Clear Booking Request
-                            </button>
-
-                        </div>
-
-                    ))}
-
-                </div>
-
-            )}
+                                    <p
+                                        style={{
+                                            margin:
+                                                "4px 0",
+                                            color: "#555"
+                                        }}
+                                    >
+                                        <strong>
+                                            Year:
+                                        </strong>{" "}
+                                        {car.year}
+                                    </p>
 
 
-            {/* ========================================= */}
-            {/* MANAGE CARS (from user_cars) */}
-            {/* ========================================= */}
+                                    <p
+                                        style={{
+                                            margin:
+                                                "4px 0",
+                                            color: "#555"
+                                        }}
+                                    >
+                                        <strong>
+                                            Daily Rate:
+                                        </strong>{" "}
+                                        ₹{car.dailyRate}
+                                    </p>
 
-            <hr />
 
-            <h2>Manage Cars</h2>
+                                    {/* STATUS */}
+
+                                    <p
+                                        style={{
+                                            marginTop:
+                                                "8px",
+                                            marginBottom:
+                                                "12px"
+                                        }}
+                                    >
+
+                                        <span
+                                            style={{
+                                                padding:
+                                                    "5px 10px",
+                                                borderRadius:
+                                                    "20px",
+                                                fontSize:
+                                                    "13px",
+                                                backgroundColor:
+                                                    car.available
+                                                        ? "#d4edda"
+                                                        : "#f8d7da",
+                                                color:
+                                                    car.available
+                                                        ? "#155724"
+                                                        : "#721c24"
+                                            }}
+                                        >
+                                            {car.available
+                                                ? "Available"
+                                                : "Unavailable"}
+                                        </span>
+
+                                    </p>
 
 
-            {cars.length === 0 ? (
+                                    {/* ================= */}
+                                    {/* BUTTONS */}
+                                    {/* ================= */}
 
-                <p>No cars found.</p>
+                                    <div
+                                        style={{
+                                            display:
+                                                "flex",
+                                            gap: "8px",
+                                            flexWrap:
+                                                "wrap"
+                                        }}
+                                    >
 
-            ) : (
+                                        {/* AVAILABILITY BUTTON */}
 
-                <div>
+                                        <button
+                                            className={`btn ${
+                                                car.available
+                                                    ? "btn-danger"
+                                                    : "btn-success"
+                                            }`}
+                                            style={{
+                                                flex:
+                                                    "1"
+                                            }}
+                                            onClick={() =>
+                                                toggleAvailability(
+                                                    car
+                                                )
+                                            }
+                                        >
+                                            {car.available
+                                                ? "Make Unavailable"
+                                                : "Make Available"}
+                                        </button>
 
-                    {cars.map((car) => (
 
-                        <div
-                            key={car.id}
+                                        {/* VIEW RC */}
+
+                                        <button
+                                            className="btn btn-primary"
+                                            style={{
+                                                flex:
+                                                    "1"
+                                            }}
+                                            onClick={() =>
+                                                setSelectedRC(
+                                                    car
+                                                )
+                                            }
+                                        >
+                                            View RC
+                                        </button>
+
+                                    </div>
+
+                                </div>
+
+                            </div>
+
+                        ))}
+
+                    </div>
+
+                )}
+
+            </div>
+
+
+            {/* ================================= */}
+            {/* BOOKING REQUESTS */}
+            {/* ================================= */}
+
+            <div
+                style={{
+                    backgroundColor: "#ffffff",
+                    borderRadius: "12px",
+                    padding: "25px",
+                    boxShadow:
+                        "0 4px 15px rgba(0,0,0,0.08)"
+                }}
+            >
+
+                <h3
+                    style={{
+                        fontWeight: "600",
+                        marginBottom: "20px"
+                    }}
+                >
+                    📋 Booking Requests
+                </h3>
+
+
+                {bookings.length === 0 ? (
+
+                    <div
+                        style={{
+                            textAlign: "center",
+                            padding: "30px",
+                            color: "#777"
+                        }}
+                    >
+                        No booking requests found.
+                    </div>
+
+                ) : (
+
+                    <div
+                        style={{
+                            overflowX: "auto"
+                        }}
+                    >
+
+                        <table
+                            className="table table-bordered table-hover"
                             style={{
-                                border:
-                                    "1px solid #ccc",
-                                padding: "15px",
-                                marginBottom:
-                                    "10px",
-                                borderRadius:
-                                    "8px"
+                                verticalAlign:
+                                    "middle"
                             }}
                         >
 
-                            {/* Car Image */}
+                            <thead
+                                className="table-dark"
+                            >
 
-                            {car.imageUrl && (
+                                <tr>
 
-                                <img
-                                    src={car.imageUrl}
-                                    alt={
-                                        `${car.brand} ${car.model}`
-                                    }
-                                    style={{
-                                        width: "250px",
-                                        height: "150px",
-                                        objectFit:
-                                            "cover",
-                                        borderRadius:
-                                            "8px",
-                                        display:
-                                            "block",
-                                        marginBottom:
-                                            "10px"
-                                    }}
-                                />
+                                    <th>
+                                        ID
+                                    </th>
 
-                            )}
+                                    <th>
+                                        Customer
+                                    </th>
 
+                                    <th>
+                                        Email
+                                    </th>
 
-                            <h3>
-                                {car.brand}{" "}
-                                {car.model}
-                            </h3>
+                                    <th>
+                                        Car
+                                    </th>
 
+                                    <th>
+                                        Start Date
+                                    </th>
 
-                            <p>
-                                <strong>
-                                    Car ID:
-                                </strong>{" "}
-                                {car.id}
-                            </p>
+                                    <th>
+                                        End Date
+                                    </th>
 
+                                    <th>
+                                        Total Price
+                                    </th>
 
-                            <p>
-                                <strong>
-                                    Variant:
-                                </strong>{" "}
-                                {car.variant}
-                            </p>
+                                    <th>
+                                        Status
+                                    </th>
 
+                                    <th>
+                                        Action
+                                    </th>
 
-                            <p>
-                                <strong>
-                                    Manufacture Year:
-                                </strong>{" "}
-                                {car.manufactureYear}
-                            </p>
+                                </tr>
+
+                            </thead>
 
 
-                            <p>
-                                <strong>
-                                    Owner:
-                                </strong>{" "}
-                                {car.ownerName}
-                            </p>
+                            <tbody>
+
+                                {bookings.map(
+                                    (booking) => (
+
+                                        <tr
+                                            key={
+                                                booking.id
+                                            }
+                                        >
+
+                                            <td>
+                                                {
+                                                    booking.id
+                                                }
+                                            </td>
 
 
-                            <p>
-                                <strong>
-                                    Daily Rate:
-                                </strong>{" "}
-                                ₹{car.dailyRate}
-                            </p>
+                                            <td>
+                                                {
+                                                    booking.customerName
+                                                }
+                                            </td>
 
 
-                            <p>
-                                <strong>
-                                    Status:
-                                </strong>{" "}
-
-                                {car.available
-                                    ? "AVAILABLE"
-                                    : "UNAVAILABLE"}
-
-                            </p>
+                                            <td>
+                                                {
+                                                    booking.customerEmail
+                                                }
+                                            </td>
 
 
-                            {/* AVAILABLE CAR */}
+                                            <td>
 
-                            {car.available ? (
+                                                {booking.car
+                                                    ? `${booking.car.brand} ${booking.car.model}`
+                                                    : "N/A"}
 
-                                <button
-                                    onClick={() =>
-                                        makeUnavailable(
-                                            car.id
-                                        )
-                                    }
-                                    style={{
-                                        backgroundColor:
-                                            "red",
-                                        color: "white",
-                                        border: "none",
-                                        padding:
-                                            "10px 15px",
-                                        borderRadius:
-                                            "5px",
-                                        cursor:
-                                            "pointer"
-                                    }}
-                                >
-                                    Make Unavailable
-                                </button>
+                                            </td>
 
-                            ) : (
 
-                                /* UNAVAILABLE CAR */
+                                            <td>
+                                                {
+                                                    booking.startDate
+                                                }
+                                            </td>
 
-                                <button
-                                    onClick={() =>
-                                        makeAvailable(
-                                            car.id
-                                        )
-                                    }
-                                    style={{
-                                        backgroundColor:
-                                            "green",
-                                        color: "white",
-                                        border: "none",
-                                        padding:
-                                            "10px 15px",
-                                        borderRadius:
-                                            "5px",
-                                        cursor:
-                                            "pointer"
-                                    }}
-                                >
-                                    Make Available
-                                </button>
 
-                            )}
+                                            <td>
+                                                {
+                                                    booking.endDate
+                                                }
+                                            </td>
 
-                        </div>
 
-                    ))}
+                                            <td>
+                                                ₹
+                                                {
+                                                    booking.totalPrice
+                                                }
+                                            </td>
+
+
+                                            <td>
+
+                                                <span
+                                                    className={`badge ${
+                                                        booking.status ===
+                                                        "APPROVED"
+                                                            ? "bg-success"
+                                                            : booking.status ===
+                                                              "REJECTED"
+                                                            ? "bg-danger"
+                                                            : "bg-warning text-dark"
+                                                    }`}
+                                                >
+                                                    {
+                                                        booking.status
+                                                    }
+                                                </span>
+
+                                            </td>
+
+
+                                            <td>
+
+                                                <div
+                                                    style={{
+                                                        display:
+                                                            "flex",
+                                                        gap:
+                                                            "8px"
+                                                    }}
+                                                >
+
+                                                    {/* APPROVE */}
+
+                                                    {booking.status ===
+                                                        "PENDING" && (
+
+                                                        <button
+                                                            className="btn btn-success btn-sm"
+                                                            onClick={() =>
+                                                                approveBooking(
+                                                                    booking.id
+                                                                )
+                                                            }
+                                                        >
+                                                            Approve
+                                                        </button>
+
+                                                    )}
+
+
+                                                    {/* DELETE */}
+
+                                                    <button
+                                                        className="btn btn-danger btn-sm"
+                                                        onClick={() =>
+                                                            deleteBooking(
+                                                                booking.id
+                                                            )
+                                                        }
+                                                    >
+                                                        Delete
+                                                    </button>
+
+                                                </div>
+
+                                            </td>
+
+                                        </tr>
+
+                                    )
+                                )}
+
+                            </tbody>
+
+                        </table>
+
+                    </div>
+
+                )}
+
+            </div>
+
+
+            {/* ================================= */}
+            {/* RC IMAGE POPUP */}
+            {/* ================================= */}
+
+            {selectedRC && (
+
+                <div
+                    style={{
+                        position: "fixed",
+                        top: 0,
+                        left: 0,
+                        width: "100%",
+                        height: "100%",
+                        backgroundColor:
+                            "rgba(0,0,0,0.75)",
+                        display: "flex",
+                        justifyContent:
+                            "center",
+                        alignItems: "center",
+                        zIndex: 9999,
+                        padding: "20px"
+                    }}
+
+                    // Clicking outside popup closes it
+                    onClick={() =>
+                        setSelectedRC(null)
+                    }
+                >
+
+                    {/* ======================= */}
+                    {/* RC POPUP */}
+                    {/* ======================= */}
+
+                    <div
+                        style={{
+                            backgroundColor:
+                                "#ffffff",
+                            borderRadius:
+                                "12px",
+                            padding: "20px",
+                            width: "90%",
+                            maxWidth: "700px",
+                            maxHeight: "90vh",
+                            textAlign:
+                                "center",
+                            position:
+                                "relative"
+                        }}
+
+                        // Prevent popup from closing
+                        // when clicking inside
+                        onClick={(e) =>
+                            e.stopPropagation()
+                        }
+                    >
+
+                        {/* CLOSE ICON */}
+
+                        <button
+                            onClick={() =>
+                                setSelectedRC(null)
+                            }
+                            style={{
+                                position:
+                                    "absolute",
+                                top: "10px",
+                                right: "10px",
+                                border: "none",
+                                background:
+                                    "#dc3545",
+                                color: "#ffffff",
+                                width: "35px",
+                                height: "35px",
+                                borderRadius:
+                                    "50%",
+                                fontSize:
+                                    "20px",
+                                cursor:
+                                    "pointer"
+                            }}
+                        >
+                            ×
+                        </button>
+
+
+                        {/* TITLE */}
+
+                        <h4
+                            style={{
+                                marginBottom:
+                                    "15px",
+                                paddingRight:
+                                    "40px"
+                            }}
+                        >
+                            RC -{" "}
+                            {selectedRC.brand}{" "}
+                            {selectedRC.model}
+                        </h4>
+
+
+                        {/* RC IMAGE */}
+
+                        <img
+                            src={`http://localhost:8080/api/user-cars/${selectedRC.id}/rc-photo`}
+                            alt="Vehicle RC"
+                            style={{
+                                width: "100%",
+                                maxHeight:
+                                    "65vh",
+                                objectFit:
+                                    "contain",
+                                borderRadius:
+                                    "8px",
+                                border:
+                                    "1px solid #ddd",
+                                backgroundColor:
+                                    "#f8f8f8"
+                            }}
+                        />
+
+
+                        {/* CLOSE BUTTON */}
+
+                        <button
+                            className="btn btn-danger"
+                            style={{
+                                marginTop:
+                                    "15px",
+                                minWidth:
+                                    "100px"
+                            }}
+                            onClick={() =>
+                                setSelectedRC(null)
+                            }
+                        >
+                            Close
+                        </button>
+
+                    </div>
 
                 </div>
 
@@ -827,5 +899,3 @@ function Admin() {
         </div>
     );
 }
-
-export default Admin;

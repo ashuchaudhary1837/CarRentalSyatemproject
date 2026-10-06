@@ -29,6 +29,7 @@ public class UserCarController {
 
     @GetMapping
     public List<UserCar> getAllUserCars() {
+
         return userCarRepository.findAll();
     }
 
@@ -39,13 +40,42 @@ public class UserCarController {
 
     @PostMapping
     public UserCar addUserCar(
-            @RequestParam("brand") String brand,
-            @RequestParam("model") String model,
-            @RequestParam("variant") String variant,
-            @RequestParam("manufactureYear") Integer manufactureYear,
-            @RequestParam("dailyRate") Double dailyRate,
-            @RequestParam("ownerName") String ownerName,
-            @RequestParam(value = "photo", required = false) MultipartFile photo
+
+            @RequestParam("brand")
+            String brand,
+
+            @RequestParam("model")
+            String model,
+
+            @RequestParam("variant")
+            String variant,
+
+            @RequestParam("manufactureYear")
+            Integer manufactureYear,
+
+            @RequestParam("dailyRate")
+            Double dailyRate,
+
+            @RequestParam("ownerName")
+            String ownerName,
+
+            @RequestParam("ownerContact")
+            Double ownerContact,
+
+            // CAR IMAGE
+            @RequestParam(
+                    value = "photo",
+                    required = false
+            )
+            MultipartFile photo,
+
+            // RC IMAGE
+            @RequestParam(
+                    value = "rcphoto",
+                    required = false
+            )
+            MultipartFile rcphoto
+
     ) throws IOException {
 
         UserCar car = new UserCar();
@@ -56,19 +86,40 @@ public class UserCarController {
         car.setManufactureYear(manufactureYear);
         car.setDailyRate(dailyRate);
         car.setOwnerName(ownerName);
+        car.setOwnerContact(ownerContact);
+
+        // New car is available by default
         car.setAvailable(true);
 
 
         // ==========================================
-        // SAVE IMAGE
+        // SAVE CAR IMAGE
         // ==========================================
 
         if (photo != null && !photo.isEmpty()) {
 
-            car.setImage(photo.getBytes());
+            car.setImage(
+                    photo.getBytes()
+            );
 
             car.setImageContentType(
                     photo.getContentType()
+            );
+        }
+
+
+        // ==========================================
+        // SAVE RC IMAGE
+        // ==========================================
+
+        if (rcphoto != null && !rcphoto.isEmpty()) {
+
+            car.setRcimage(
+                    rcphoto.getBytes()
+            );
+
+            car.setRcimageContentType(
+                    rcphoto.getContentType()
             );
         }
 
@@ -82,31 +133,111 @@ public class UserCarController {
     // ==========================================
 
     @GetMapping("/{id}/photo")
-    public ResponseEntity<byte[]> getCarPhoto(@PathVariable Long id) {
+    public ResponseEntity<byte[]> getCarPhoto(
+            @PathVariable Long id
+    ) {
 
         UserCar car = userCarRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Car not found"));
+                .orElseThrow(
+                        () -> new RuntimeException(
+                                "Car not found"
+                        )
+                );
 
-        if (car.getImage() == null || car.getImage().length == 0) {
-            return ResponseEntity.notFound().build();
+
+        if (
+                car.getImage() == null ||
+                        car.getImage().length == 0
+        ) {
+
+            return ResponseEntity
+                    .notFound()
+                    .build();
         }
 
-        MediaType mediaType = MediaType.IMAGE_JPEG;
+
+        MediaType mediaType =
+                MediaType.IMAGE_JPEG;
+
 
         if (car.getImageContentType() != null) {
+
             try {
-                mediaType = MediaType.parseMediaType(
-                        car.getImageContentType()
-                );
+
+                mediaType =
+                        MediaType.parseMediaType(
+                                car.getImageContentType()
+                        );
+
             } catch (Exception ignored) {
-                mediaType = MediaType.IMAGE_JPEG;
+
+                mediaType =
+                        MediaType.IMAGE_JPEG;
             }
         }
+
 
         return ResponseEntity
                 .ok()
                 .contentType(mediaType)
                 .body(car.getImage());
+    }
+
+
+    // ==========================================
+    // GET RC IMAGE
+    // ==========================================
+
+    @GetMapping("/{id}/rc-photo")
+    public ResponseEntity<byte[]> getRCPhoto(
+            @PathVariable Long id
+    ) {
+
+        UserCar car = userCarRepository.findById(id)
+                .orElseThrow(
+                        () -> new RuntimeException(
+                                "Car not found"
+                        )
+                );
+
+
+        // Check RC image
+        if (
+                car.getRcimage() == null ||
+                        car.getRcimage().length == 0
+        ) {
+
+            return ResponseEntity
+                    .notFound()
+                    .build();
+        }
+
+
+        MediaType mediaType =
+                MediaType.IMAGE_JPEG;
+
+
+        if (car.getRcimageContentType() != null) {
+
+            try {
+
+                mediaType =
+                        MediaType.parseMediaType(
+                                car.getRcimageContentType()
+                        );
+
+            } catch (Exception ignored) {
+
+                mediaType =
+                        MediaType.IMAGE_JPEG;
+            }
+        }
+
+
+        return ResponseEntity
+                .ok()
+                .contentType(mediaType)
+                .body(car.getRcimage());
     }
 
 
@@ -119,10 +250,13 @@ public class UserCarController {
             @PathVariable Long id
     ) {
 
-        UserCar car = userCarRepository.findById(id)
-                .orElseThrow(
-                        () -> new RuntimeException("Car not found")
-                );
+        UserCar car =
+                userCarRepository.findById(id)
+                        .orElseThrow(
+                                () -> new RuntimeException(
+                                        "Car not found"
+                                )
+                        );
 
         car.setAvailable(true);
 
@@ -139,10 +273,13 @@ public class UserCarController {
             @PathVariable Long id
     ) {
 
-        UserCar car = userCarRepository.findById(id)
-                .orElseThrow(
-                        () -> new RuntimeException("Car not found")
-                );
+        UserCar car =
+                userCarRepository.findById(id)
+                        .orElseThrow(
+                                () -> new RuntimeException(
+                                        "Car not found"
+                                )
+                        );
 
         car.setAvailable(false);
 

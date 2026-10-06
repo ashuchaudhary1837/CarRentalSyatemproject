@@ -15,6 +15,7 @@ public class UserCar {
     private Integer manufactureYear;
     private Double dailyRate;
     private String ownerName;
+    private Double ownerContact;
     private boolean available;
 
     @Lob
@@ -22,6 +23,13 @@ public class UserCar {
     private byte[] image;
 
     private String imageContentType;
+
+    @Lob
+    @Column(name = "rcimage", columnDefinition = "LONGBLOB")
+    private byte[] rcimage;
+
+    private String rcimageContentType;
+
 
 
     // ==============================
@@ -106,5 +114,29 @@ public class UserCar {
 
     public void setImageContentType(String imageContentType) {
         this.imageContentType = imageContentType;
+    }
+
+    public byte[] getRcimage() {
+        return rcimage;
+    }
+
+    public void setRcimage(byte[] rcimage) {
+        this.rcimage = rcimage;
+    }
+
+    public String getRcimageContentType() {
+        return rcimageContentType;
+    }
+
+    public void setRcimageContentType(String rcimageContentType) {
+        this.rcimageContentType = rcimageContentType;
+    }
+
+    public Double getOwnerContact() {
+        return ownerContact;
+    }
+
+    public void setOwnerContact(Double ownerContact) {
+        this.ownerContact = ownerContact;
     }
 }

@@ -1,263 +1,837 @@
-import React, { useState, useEffect } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
-import axios from 'axios';
+import React, { useEffect, useState } from "react";
+import axios from "axios";
+import { Link } from "react-router-dom";
 
 export default function Home() {
 
-  const [cars, setCars] = useState([]);
-  const [selectedCar, setSelectedCar] = useState(null);
-  const [booking, setBooking] = useState({
-    customerName: '',
-    customerEmail: '',
-    startDate: '',
-    endDate: ''
-  });
+    const [cars, setCars] = useState([]);
+    const [selectedCar, setSelectedCar] = useState(null);
+    const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    fetchCars();
-  }, []);
+    const [booking, setBooking] = useState({
+        customerName: "",
+        customerEmail: "",
+        startDate: "",
+        endDate: ""
+    });
 
-  const fetchCars = async () => {
-    try {
-      const res = await axios.get('http://localhost:8080/api/user-cars'); // fixed: hyphen not underscore
-      setCars(res.data);
-    } catch (err) {
-      console.error('Error fetching cars:', err);
-    }
-  };
 
-  const handleBookingSubmit = async (e) => {
-    e.preventDefault();
-    if (!selectedCar) return;
-    const payload = {
-      ...booking,
-      car: { id: selectedCar.id }
+    // ==============================
+    // LOAD RAZORPAY SCRIPT
+    // ==============================
+
+    useEffect(() => {
+
+        const script = document.createElement("script");
+
+        script.src =
+            "https://checkout.razorpay.com/v1/checkout.js";
+
+        script.async = true;
+
+        document.body.appendChild(script);
+
+        return () => {
+            document.body.removeChild(script);
+        };
+
+    }, []);
+
+
+    // ==============================
+    // LOAD CARS
+    // ==============================
+
+    useEffect(() => {
+        fetchCars();
+    }, []);
+
+
+    const fetchCars = async () => {
+
+        try {
+
+            const response = await axios.get(
+                "http://localhost:8080/api/cars"
+            );
+
+            setCars(response.data);
+
+        } catch (error) {
+
+            console.error(
+                "Error loading cars:",
+                error
+            );
+
+        }
     };
-    try {
-      await axios.post('http://localhost:8080/api/bookings', payload);
-      alert('Your Booking Request Is Sent Succesfully !');
-      setSelectedCar(null);
-      setBooking({ customerName: '', customerEmail: '', startDate: '', endDate: '' });
-      fetchCars();
-    } catch (err) {
-      alert('Failed to create booking: ' + (err.response?.data?.message || err.message));
-    }
-  };
 
-  const navigate = useNavigate();
-  const user = JSON.parse(localStorage.getItem("user"));
 
-  const handleLogout = () => {
-    localStorage.removeItem("user");
-    navigate("/login");
-  };
+    // ==============================
+    // HANDLE INPUT CHANGE
+    // ==============================
 
-  return (
-    <div>
-      <header>
-        <div className="dropdown">
-          <button
-            className="btn btn-secondary dropdown-toggle"
-            type="button"
-            data-bs-toggle="dropdown"
-          >
-            My Account
-          </button>
+    const handleChange = (e) => {
 
-          <ul className="dropdown-menu">
-            <li>
-              <Link className="dropdown-item" to="/my-bookings">
-                My Bookings
-              </Link>
-            </li>
-            <li>
-              <button className="dropdown-item" onClick={handleLogout}>
-                Logout
-              </button>
-            </li>
-          </ul>
-        </div>
-      </header>
+        const { name, value } = e.target;
 
-      <main style={{ marginTop: "15px", marginBottom: "15px" }}>
+        setBooking((previous) => ({
+            ...previous,
+            [name]: value
+        }));
 
-        <div className="container text-center">
-          <h3 className="mb-4">Welcome to Car Rental 🚗</h3>
-          <p>Rent your favorite car easily and quickly.</p>
+    };
 
-          <h1>
-            <button className="btn btn-primary" onClick={() => navigate("/list")}>
-              List Your Own Car
-            </button>
-          </h1>
-        </div>
 
-        <div style={{ maxWidth: '1000px', margin: '0 auto', padding: '20px', fontFamily: 'sans-serif' }}>
+    // ==============================
+    // SELECT CAR
+    // ==============================
 
-          {cars.length === 0 ? (
-            <p className="text-center text-muted">No cars listed yet.</p>
-          ) : (
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
-              gap: '20px'
-            }}>
-              
-           {cars.map((car) => (
-  <div
-    key={car.id}
-    style={{
-      border: '1px solid #ccc',
-      borderRadius: '8px',
-      padding: '15px'
-    }}
-  > 
+    const handleBookNow = (car) => {
 
-    <img
-      src={`http://localhost:8080/api/user-cars/${car.id}/photo`}
-      alt={car.model}
-      style={{
-        width: '100%',
-        height: '180px',
-        objectFit: 'cover',
-        borderRadius: '4px'
-      }}
-    />
+        setSelectedCar(car);
 
-    <h3>
-      {car.brand} {car.model}
-    </h3>
+        setBooking({
+            customerName: "",
+            customerEmail: "",
+            startDate: "",
+            endDate: ""
+        });
 
-    <p>
-      <strong>Variant:</strong> {car.variant}
-    </p>
+    };
 
-    <p>
-      <strong>Manufacture Year:</strong> {car.manufactureYear}
-    </p>
 
-    <p>
-      <strong>Rate:</strong> ₹{car.dailyRate}/day
-    </p>
+    // ==============================
+    // CLOSE MODAL
+    // ==============================
 
-    <p>
-      <strong>Owner:</strong> {car.ownerName}
-    </p>
+    const closeBooking = () => {
 
-    <p>
-      <strong>Status:</strong>{" "}
-      {car.available ? 'Available' : 'Unavailable'}
-    </p>
+        if (!loading) {
+            setSelectedCar(null);
+        }
 
-    <button
-      disabled={!car.available}
-      onClick={() => setSelectedCar(car)}
-      style={{
-        width: '100%',
-        padding: '10px',
-        backgroundColor: car.available
-          ? '#007bff'
-          : '#ccc',
-        color: '#fff',
-        border: 'none',
-        borderRadius: '4px',
-        cursor: car.available
-          ? 'pointer'
-          : 'not-allowed'
-      }}
-    >
-      {car.available ? 'Book Now' : 'Unavailable'}
-    </button>
+    };
 
-  </div>
-))}
 
-          {selectedCar && (
-            <div style={{
-              position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-              backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex',
-              alignItems: 'center', justifyContent: 'center'
-            }}>
-              <div style={{ background: '#fff', padding: '25px', borderRadius: '8px', width: '400px' }}>
-                <h2>Book {selectedCar.brand} {selectedCar.model}</h2>
-                <form onSubmit={handleBookingSubmit}>
-                  <div style={{ marginBottom: '10px' }}>
-                    <label>Name:</label>
-                    <input
-                      type="text"
-                      required
-                      style={{ width: '100%', padding: '8px', marginTop: '4px' }}
-                      value={booking.customerName}
-                      onChange={(e) => setBooking({ ...booking, customerName: e.target.value })}
-                    />
-                  </div>
-                  <div style={{ marginBottom: '10px' }}>
-                    <label>Email:</label>
-                    <input
-                      type="email"
-                      required
-                      style={{ width: '100%', padding: '8px', marginTop: '4px' }}
-                      value={booking.customerEmail}
-                      onChange={(e) => setBooking({ ...booking, customerEmail: e.target.value })}
-                    />
-                  </div>
-                  <div style={{ marginBottom: '10px' }}>
-                    <label>Start Date:</label>
-                    <input
-                      type="date"
-                      required
-                      style={{ width: '100%', padding: '8px', marginTop: '4px' }}
-                      value={booking.startDate}
-                      onChange={(e) => setBooking({ ...booking, startDate: e.target.value })}
-                    />
-                  </div>
-                  <div style={{ marginBottom: '15px' }}>
-                    <label>End Date:</label>
-                    <input
-                      type="date"
-                      required
-                      style={{ width: '100%', padding: '8px', marginTop: '4px' }}
-                      value={booking.endDate}
-                      onChange={(e) => setBooking({ ...booking, endDate: e.target.value })}
-                    />
-                  </div>
-                  <div style={{ display: 'flex', gap: '10px' }}>
-                    <button
-                      type="submit"
-                      style={{
-                        flex: 1, padding: '10px', backgroundColor: '#28a745',
-                        color: '#fff', border: 'none', borderRadius: '4px'
-                      }}
+    // =========================================================
+    // PAY & SEND BOOKING REQUEST
+    // =========================================================
+
+    const handlePayment = async () => {
+
+        if (!selectedCar) {
+            alert("Please select a car");
+            return;
+        }
+
+
+        // ------------------------------
+        // VALIDATE FORM
+        // ------------------------------
+
+        if (
+            !booking.customerName.trim() ||
+            !booking.customerEmail.trim() ||
+            !booking.startDate ||
+            !booking.endDate
+        ) {
+
+            alert("Please fill all booking details");
+
+            return;
+        }
+
+
+        // ------------------------------
+        // VALIDATE DATE
+        // ------------------------------
+
+        const start =
+            new Date(booking.startDate);
+
+        const end =
+            new Date(booking.endDate);
+
+
+        if (end <= start) {
+
+            alert(
+                "End date must be after start date"
+            );
+
+            return;
+        }
+
+
+        try {
+
+            setLoading(true);
+
+
+            // =====================================================
+            // STEP 1
+            // CREATE RAZORPAY ORDER
+            // =====================================================
+
+            const orderResponse =
+                await axios.post(
+                    "http://localhost:8080/api/payment/create-order",
+                    {
+                        carId: selectedCar.id,
+
+                        customerName:
+                            booking.customerName,
+
+                        customerEmail:
+                            booking.customerEmail,
+
+                        startDate:
+                            booking.startDate,
+
+                        endDate:
+                            booking.endDate
+                    }
+                );
+
+
+            const order = orderResponse.data;
+
+            console.log(
+                "Order created:",
+                order
+            );
+
+
+            // =====================================================
+            // STEP 2
+            // RAZORPAY OPTIONS
+            // =====================================================
+
+            const options = {
+
+                // ==========================================
+                // YOUR RAZORPAY TEST KEY ID
+                // ==========================================
+
+                key: "rzp_test_Tkzhsf8zUbi6wG",
+
+
+                // Amount returned by backend
+                // Razorpay uses paise
+
+                amount: order.amount,
+
+
+                currency: order.currency,
+
+
+                name: "Car Rental System",
+
+
+                description:
+                    `Booking for ${selectedCar.brand} ${selectedCar.model}`,
+
+
+                // Razorpay Order ID
+
+                order_id: order.orderId,
+
+
+                // ==========================================
+                // CUSTOMER DETAILS
+                // ==========================================
+
+                prefill: {
+
+                    name:
+                        booking.customerName,
+
+                    email:
+                        booking.customerEmail
+
+                },
+
+
+                // ==========================================
+                // EXTRA INFORMATION
+                // ==========================================
+
+                notes: {
+
+                    carId:
+                        String(selectedCar.id),
+
+                    startDate:
+                        booking.startDate,
+
+                    endDate:
+                        booking.endDate
+
+                },
+
+
+                // ==========================================
+                // RAZORPAY THEME
+                // ==========================================
+
+                theme: {
+
+                    color: "#0d6efd"
+
+                },
+
+
+                // =====================================================
+                // STEP 3
+                // PAYMENT SUCCESS HANDLER
+                // =====================================================
+
+                handler: async function (response) {
+
+                    console.log(
+                        "Payment successful:",
+                        response
+                    );
+
+
+                    try {
+
+                        // =================================================
+                        // STEP 4
+                        // SEND PAYMENT DETAILS TO BACKEND
+                        // =================================================
+
+                        const verifyResponse =
+                            await axios.post(
+                                "http://localhost:8080/api/payment/verify",
+                                {
+
+                                    razorpayOrderId:
+                                        response.razorpay_order_id,
+
+                                    razorpayPaymentId:
+                                        response.razorpay_payment_id,
+
+                                    razorpaySignature:
+                                        response.razorpay_signature,
+
+                                    carId:
+                                        selectedCar.id,
+
+                                    customerName:
+                                        booking.customerName,
+
+                                    customerEmail:
+                                        booking.customerEmail,
+
+                                    startDate:
+                                        booking.startDate,
+
+                                    endDate:
+                                        booking.endDate
+                                }
+                            );
+
+
+                        console.log(
+                            "Verification response:",
+                            verifyResponse.data
+                        );
+
+
+                        // ==========================================
+                        // PAYMENT VERIFIED
+                        // BOOKING CREATED
+                        // ==========================================
+
+                        alert(
+                            "Payment successful! Your booking has been approved."
+                        );
+
+
+                        // Close modal
+
+                        setSelectedCar(null);
+
+
+                        // Reset form
+
+                        setBooking({
+                            customerName: "",
+                            customerEmail: "",
+                            startDate: "",
+                            endDate: ""
+                        });
+
+
+                        // Reload cars
+                        // Car will now be unavailable
+
+                        await fetchCars();
+
+
+                    } catch (error) {
+
+                        console.error(
+                            "Verification error:",
+                            error
+                        );
+
+
+                        alert(
+                            error.response?.data?.message ||
+                            "Payment verification failed."
+                        );
+
+                    } finally {
+
+                        setLoading(false);
+
+                    }
+
+                },
+
+
+                // =====================================================
+                // PAYMENT WINDOW CLOSED
+                // =====================================================
+
+                modal: {
+
+                    ondismiss: function () {
+
+                        console.log(
+                            "Razorpay checkout closed"
+                        );
+
+                        setLoading(false);
+
+                    }
+
+                }
+
+            };
+
+
+            // =====================================================
+            // CHECK RAZORPAY SCRIPT
+            // =====================================================
+
+            if (!window.Razorpay) {
+
+                alert(
+                    "Razorpay is not loaded. Please refresh the page."
+                );
+
+                setLoading(false);
+
+                return;
+            }
+
+
+            // =====================================================
+            // CREATE RAZORPAY OBJECT
+            // =====================================================
+
+            const razorpay =
+                new window.Razorpay(options);
+
+
+            // =====================================================
+            // PAYMENT FAILED
+            // =====================================================
+
+            razorpay.on(
+                "payment.failed",
+                function (response) {
+
+                    console.error(
+                        "Payment failed:",
+                        response
+                    );
+
+                    setLoading(false);
+
+                    alert(
+                        "Payment failed. Booking was not created."
+                    );
+
+                }
+            );
+
+
+            // =====================================================
+            // OPEN RAZORPAY CHECKOUT
+            // =====================================================
+
+            razorpay.open();
+
+
+        } catch (error) {
+
+            console.error(
+                "Create order error:",
+                error
+            );
+
+
+            alert(
+                error.response?.data?.message ||
+                "Unable to create Razorpay order."
+            );
+
+
+            setLoading(false);
+
+        }
+
+    };
+
+
+    // =========================================================
+    // JSX
+    // =========================================================
+
+    return (
+
+        <div>
+
+            {/* ============================
+                NAVBAR
+            ============================ */}
+
+            <nav className="navbar navbar-dark bg-dark">
+
+                <div className="container">
+
+                    <Link
+                        to="/home"
+                        className="navbar-brand"
                     >
-                      Confirm
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setSelectedCar(null)}
-                      style={{
-                        flex: 1, padding: '10px', backgroundColor: '#dc3545',
-                        color: '#fff', border: 'none', borderRadius: '4px'
-                      }}
+                        🚗 Car Rental
+                    </Link>
+
+                    <Link
+                        to="/login"
+                        className="btn btn-outline-light"
                     >
-                      Cancel
-                    </button>
-                  </div>
-                </form>
-              </div>
+                        Login
+                    </Link>
+
+                </div>
+
+            </nav>
+
+
+            {/* ============================
+                CARS
+            ============================ */}
+
+            <div className="container mt-4">
+
+                <h2 className="mb-4">
+                    Available Cars
+                </h2>
+
+
+                <div className="row">
+
+                    {cars.map((car) => (
+
+                        <div
+                            className="col-md-4 mb-4"
+                            key={car.id}
+                        >
+
+                            <div className="card h-100 shadow-sm">
+
+
+                                {/* CAR IMAGE */}
+
+                                {car.imageUrl && (
+
+                                    <img
+                                        src={car.imageUrl}
+                                        alt={
+                                            `${car.brand} ${car.model}`
+                                        }
+                                        className="card-img-top"
+                                        style={{
+                                            height: "220px",
+                                            objectFit: "cover"
+                                        }}
+                                    />
+
+                                )}
+
+
+                                <div className="card-body">
+
+                                    <h5 className="card-title">
+
+                                        {car.brand}{" "}
+                                        {car.model}
+
+                                    </h5>
+
+
+                                    <p>
+                                        Year: {car.year}
+                                    </p>
+
+
+                                    <p>
+                                        ₹{car.dailyRate} / day
+                                    </p>
+
+
+                                    <p>
+
+                                        Status:{" "}
+
+                                        {car.available ? (
+
+                                            <span className="text-success fw-bold">
+                                                Available
+                                            </span>
+
+                                        ) : (
+
+                                            <span className="text-danger fw-bold">
+                                                Unavailable
+                                            </span>
+
+                                        )}
+
+                                    </p>
+
+
+                                    {car.available && (
+
+                                        <button
+                                            className="btn btn-primary w-100"
+                                            onClick={() =>
+                                                handleBookNow(car)
+                                            }
+                                        >
+                                            Book Now
+                                        </button>
+
+                                    )}
+
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                    ))}
+
+                </div>
+
             </div>
-          )}
-        </div>
-          )}
-        </div>
-      </main>
 
-      <footer className="navbar navbar-expand-lg navbar-dark bg-dark fixed-bottom">
-        <div className="container text-center">
-          <p className="text-white">
-            © 2026 Car Rental System | All Rights Reserved | Thanx For Visiting Our Site
-          </p>
+
+            {/* =================================================
+                BOOKING MODAL
+            ================================================= */}
+
+            {selectedCar && (
+
+                <div
+                    className="modal d-block"
+                    style={{
+                        backgroundColor:
+                            "rgba(0,0,0,0.6)"
+                    }}
+                >
+
+                    <div className="modal-dialog">
+
+                        <div className="modal-content">
+
+
+                            {/* MODAL HEADER */}
+
+                            <div className="modal-header">
+
+                                <h5 className="modal-title">
+
+                                    Book{" "}
+                                    {selectedCar.brand}{" "}
+                                    {selectedCar.model}
+
+                                </h5>
+
+
+                                <button
+                                    type="button"
+                                    className="btn-close"
+                                    onClick={closeBooking}
+                                    disabled={loading}
+                                />
+
+                            </div>
+
+
+                            {/* MODAL BODY */}
+
+                            <div className="modal-body">
+
+
+                                {/* NAME */}
+
+                                <div className="mb-3">
+
+                                    <label className="form-label">
+                                        Customer Name
+                                    </label>
+
+                                    <input
+                                        type="text"
+                                        name="customerName"
+                                        className="form-control"
+                                        placeholder="Enter your name"
+                                        value={
+                                            booking.customerName
+                                        }
+                                        onChange={
+                                            handleChange
+                                        }
+                                    />
+
+                                </div>
+
+
+                                {/* EMAIL */}
+
+                                <div className="mb-3">
+
+                                    <label className="form-label">
+                                        Email
+                                    </label>
+
+                                    <input
+                                        type="email"
+                                        name="customerEmail"
+                                        className="form-control"
+                                        placeholder="Enter your email"
+                                        value={
+                                            booking.customerEmail
+                                        }
+                                        onChange={
+                                            handleChange
+                                        }
+                                    />
+
+                                </div>
+
+
+                                {/* START DATE */}
+
+                                <div className="mb-3">
+
+                                    <label className="form-label">
+                                        Start Date
+                                    </label>
+
+                                    <input
+                                        type="date"
+                                        name="startDate"
+                                        className="form-control"
+                                        value={
+                                            booking.startDate
+                                        }
+                                        onChange={
+                                            handleChange
+                                        }
+                                    />
+
+                                </div>
+
+
+                                {/* END DATE */}
+
+                                <div className="mb-3">
+
+                                    <label className="form-label">
+                                        End Date
+                                    </label>
+
+                                    <input
+                                        type="date"
+                                        name="endDate"
+                                        className="form-control"
+                                        value={
+                                            booking.endDate
+                                        }
+                                        onChange={
+                                            handleChange
+                                        }
+                                    />
+
+                                </div>
+
+
+                                {/* PAYMENT MESSAGE */}
+
+                                <div className="alert alert-info">
+
+                                    <strong>
+                                        Payment Required
+                                    </strong>
+
+                                    <br />
+
+                                    Your payment will be
+                                    completed before the
+                                    booking is created.
+
+                                </div>
+
+                            </div>
+
+
+                            {/* MODAL FOOTER */}
+
+                            <div className="modal-footer">
+
+                                <button
+                                    type="button"
+                                    className="btn btn-secondary"
+                                    onClick={closeBooking}
+                                    disabled={loading}
+                                >
+                                    Cancel
+                                </button>
+
+
+                                <button
+                                    type="button"
+                                    className="btn btn-success"
+                                    onClick={handlePayment}
+                                    disabled={loading}
+                                >
+
+                                    {loading
+                                        ? "Processing..."
+                                        : "💳 Pay & Send Booking Request"}
+
+                                </button>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            )}
+
         </div>
-      </footer>
-    </div>
-  );
+
+    );
 }
